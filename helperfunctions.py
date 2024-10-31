@@ -27,7 +27,7 @@ def AppendFile(filename, content):
     with open(path, "a") as f:
         if type(content)==list:
             for c in content:
-                f.write(c+'\n')
+                f.write(c.strip()+'\n')
         else:
             f.write(content)
     pass
@@ -43,13 +43,16 @@ def ReadFile(filename):
         lines = file.readlines()
     return lines
 
-def UpdateFile(filename, data):
+def UpdateFile(filename, data, failedURLs=False):
     filename=CorrectFileName(filename)
     # path=FilePath(common.store, filename)
-    if IsFilePresent(filename):
-        os.remove(FilePath(filename))
-        AppendFile(filename, data)
+    if failedURLs:
+        if IsFilePresent(filename):
+            os.remove(FilePath(filename))
+            AppendFile(filename, data)
 
+        else:
+            AppendFile(filename, data)
     else:
         AppendFile(filename, data)
 
@@ -58,14 +61,17 @@ def IsFilePresent(filename, extension=".txt"):
     path=FilePath(filename)
     return os.path.exists(path)
 
-def ExtractInfo(soup, className, extend=False):
+def ExtractInfo(soup,  className, extend=False, tag="div"):
     data=""
-    output=soup.find("div", class_=className)
-    if output:
-        if extend:
-            return output
-        else:
-            data=output.get_text()
+    try:
+        output=soup.find(tag, class_=className)
+        if output:
+            if extend:
+                return output
+            else:
+                data=output.get_text()
+    except:
+       data="" 
     return data
 
 

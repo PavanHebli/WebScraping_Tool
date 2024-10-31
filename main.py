@@ -7,10 +7,12 @@ import time
 import random
 import pandas as pd
 from LumaEvents import LumaMain
+from EventBriteEvents import EventBriteMain
 
 start_time = time.time()
 
-LumaMain()
+# LumaMain()
+EventBriteMain()
 
 print("--- %s seconds ---" % round((time.time() - start_time), 2))
 

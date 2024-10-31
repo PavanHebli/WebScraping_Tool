@@ -6,31 +6,100 @@ import time
 import random
 import pandas as pd
 
-def ScrapeEvents():
+def GetEventsList():
     links=[]
-    html = hs.GetHTML(helper.concatURL(EventBrite.baseURL, EventBrite.exploreEventsURL), className=EventBrite.exploreEventClass)
-    soup = bs(html, "html.parser")
-    exploreEvenets_data=soup.find_all("div", class_=EventBrite.exploreEventClass)
-    for eventSection in exploreEvenets_data:
-        allEvenetLinks=eventSection.find_all("a")
-        for link in allEvenetLinks:
-            links.append(link.get('href'))
-            print( link.get('href'))
-        helper.UpdateFile(EventBrite.exploreAllEventsFile, links)
+    for page in range(432, EventBrite.pages+1):
+        print(f"Fetching data from page: {page}")
+        html = hs.GetHTML(helper.concatURL(EventBrite.baseURL, EventBrite.exploreEventsURL, f"{EventBrite.paginationURL}{page}"), className=EventBrite.exploreEventClass)
+        soup = bs(html, "html.parser")
+        exploreEvenets_data=soup.find_all("section", class_=EventBrite.exploreEventClass)
+        # allEvenetLinks=exploreEvenets_data.find_all("a")
+        for link in exploreEvenets_data:
+            url=link.find("a").get('href')
+            links.append(url)
+        helper.UpdateFile(EventBrite.allEventsListFile, links)
         t=random.randint(2,15)
         print(f"Sleeping for {t} seconds...")
         time.sleep(t)
     pass
 
-def GetEventsList():
+# def GetEventsList():
     
-    pass
+#     pass
 
-def ExctractEventData():
+def ExctractEventData(filename, failedURL=False):
+    links=helper.ReadFile(filename)
+    pdDict={"eventName":[],
+            "organizer":[],
+            "date":[],
+            "time":[],
+            "address": [],
+            "cost":[],
+            "tags":[],
+            "url":[]
+                }
+    failed_urls=[]
+    try:
+        for link in links:
+            html = hs.GetHTML(helper.concatURL(link), className=EventBrite.eventDetailesTitle)
+            soup = bs(html, "html.parser")
+            pdDict["url"].append(link)
+            eventName=helper.ExtractInfo(soup, EventBrite.eventDetailesTitle, tag="h1")
+            pdDict["eventName"].append(eventName)
+            eventOrganizer=helper.ExtractInfo(soup, EventBrite.eventDetailsOrganizer, tag="strong")
+            pdDict["organizer"].append(eventOrganizer)
+            eventDateTime=helper.ExtractInfo(soup, EventBrite.eventDetailsDateTime, tag="span")
+            if eventDateTime:
+                eventDate=eventDateTime[0:3]
+                eventTime=eventDateTime[4:]
+                pdDict["date"].append(eventDate)
+                pdDict["time"].append(eventTime)
+            else:
+                pdDict["date"].append("")
+                pdDict["time"].append("")
+            eventAdressTag=helper.ExtractInfo(soup, EventBrite.eventDetailsAddress, extend=True)
+            eventAdress=eventAdressTag.get_text()
+            eventAdress=f'{eventAdressTag.find("p").get_text()} {eventAdress}'
+            pdDict["address"].append(eventAdress)
+            eventCost1=helper.ExtractInfo(soup, EventBrite.eventCost1)
+            eventCost2=helper.ExtractInfo(soup, EventBrite.eventCost2)
+            if eventCost1 or eventCost2:
+                pdDict["cost"].append(f"{eventCost1} {eventCost2}")
+            
+            eventUrgencyTag1=helper.ExtractInfo(soup, EventBrite.eventUrgency)
+            eventUrgencyTag2=helper.ExtractInfo(soup, EventBrite.eventUrgency2, tag="span")
+            if eventUrgencyTag1 or eventUrgencyTag2:
+                pdDict["tags"].append(f"{eventUrgencyTag1} {eventUrgencyTag2}")
+
+            t=random.randint(5, 20)
+            print(f"Sleeping for {t} seconds...")
+            time.sleep(t)
+    except:
+        failed_urls.append(link)
+    
+    helper.UpdateFile(EventBrite.failedURLsFile, failed_urls, failedURLs=failedURL)
+    helper.UpdateCSV(EventBrite.csvFile, pdDict)
     pass
 
 def RerunFailedExtraction():
+
     pass
 
 def EventBriteMain():
-    pass
+    GetEventsList()
+    # if helper.IsFilePresent(EventBrite.csvFile, extension=".csv"):
+    #     print("[INFO EVENT_BRITE EVENT]: if loop")
+    #     if helper.IsFilePresent(EventBrite.failedURLsFile):
+    #         print("[INFO EVENT_BRITE EVENT]: if loop failed URLS")
+    #         ExctractEventData(EventBrite.failedURLsFile, failedURL=True)
+    #     else:
+    #         print("Scraping completed")
+    # elif helper.IsFilePresent(EventBrite.allEventsListFile):
+    #     print(f"[INFO EVENT_BRITE EVENT]: elif-1 loop {EventBrite.allEventsListFile}")
+    #     ExctractEventData(EventBrite.allEventsListFile)
+    # else:
+    #     print("[INFO EVENT_BRITE EVENT]: else loop")
+    #     GetEventsList()
+    #     ExctractEventData(EventBrite.allEventsListFile)
+    #     ExctractEventData(EventBrite.failedURLsFile, failedURL=True)
+    # pass
