@@ -29,7 +29,7 @@ def AppendFile(filename, content):
             for c in content:
                 f.write(c.strip()+'\n')
         else:
-            f.write(content)
+            f.write(content.strip()+'\n')
     pass
 
 def WriteFile():
@@ -75,12 +75,11 @@ def ExtractInfo(soup,  className, extend=False, tag="div"):
     return data
 
 
-def CreateCSV(filename, data):
+def CreateCSV(filename, data, mode='w', header=True):
     filename=CorrectFileName(filename, extension=".csv")
     path=FilePath(filename)
     # df = pd.DataFrame(data)
-    data.to_csv(path, index=False, sep=',')
-    print("CSV file saved successfully.")
+    data.to_csv(path, mode=mode, index=False, sep=',', header=header)
 
 def ReadCSV(filename):
     filename=CorrectFileName(filename, extension=".csv")
@@ -105,3 +104,16 @@ def UpdateCSV(filename, data):
     else:
         df_new = pd.DataFrame(data)
         CreateCSV(filename, df_new)
+
+def UpdateOnFlyFile(filename, data):
+    filename=CorrectFileName(filename)
+    AppendFile(filename, data)
+    print(f"[INFO] TEXT file Updated!")
+    pass
+
+def UpdateOnFlyCSV(filename, data, header, mode='a'):
+    df_new = pd.DataFrame(data)
+    CreateCSV(filename, df_new, mode=mode, header=header)
+    print(f"[INFO] CSV file Updated!")
+
+    pass
